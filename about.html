@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<html>
+
+<head>
+    <title>about</title>
+    <link href='https://fonts.googleapis.com/css?family=Inria+Serif' rel='stylesheet'>
+
+</head>
+<style>
+    body {
+        font-family: 'Inria Serif', sans-serif;
+        background-color: #f9f9f9;
+        color:#002E63;
+        overflow-y: auto;   /* Forces vertical scrolling if content is long */
+        height: auto;      
+        margin-bottom: 50px;
+    }
+    #logo {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 20px;
+    }
+    #description {
+        max-width: 1000px;
+        margin-top: 0px;
+        padding: 0px;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+    }
+    #faq {
+        max-width: 1000px;
+        margin-top: 0px;
+        padding: 0px;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+    }
+    #faq p {
+        line-height: 2.0;
+    }
+    #buttons {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        gap: 30px;
+        margin-right: 40px;
+    }
+    #kdeplot-button:hover {
+        scale: 1.1;
+        background-color: #d6d6d6;
+        transition: background-color 0.3s ease-in-out;
+    }
+    #scatterplot-button:hover {
+        scale: 1.1;
+        background-color: #d6d6d6;
+        transition: background-color 0.3s ease-in-out;
+    }
+    .header-line {
+        height: 1px;             
+        background-color: #002E63; 
+        width: 80%;             
+        margin-top: -7px;       
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+</style>
+<body>
+    <div id = "logo">
+        <img src="/images/cdh.png" alt="CDH Logo" width="150px" height="auto">
+    </div>
+    <div id = 'buttons'>
+        <div id = 'scatterplot-button'>
+            <a href = "scatterplot.html" style="text-decoration: none; color: #002E63; font-size: 18px;">
+                <p>scatterplot</p>
+            </a>
+        </div>
+        <div id = 'kdeplot-button'>
+            <a href = "kdeplot.html" style="text-decoration: none; color: #002E63; font-size: 18px;">
+                <p>density plot</p>
+            </a>
+        </div>
+    </div>
+    <br>
+    <div class="header-line"></div>  
+    <h1 style="text-align: center; margin-top: 40px;">About This Project</h1>
+    <div id = "description">
+        <p>The purpose of this website is to provide insight into research data at the University of Virginia through interactive data visualizations.</p>
+        <p>This project was created by the Connected Data Hub at the University of Virginia under Professor Alex Gates. </p>
+        <p>Data preprocessing by Shen Qianyi.</p>
+        <p>Interactive data and web design by Anna Yao.</p>
+    </div>
+    <br>
+    <h1 style="text-align: center;">FAQ</h1>
+    <div id = "faq">
+        <p><strong>Q: What is an ego/ co-authorship network?</strong> <br> An ego network showcases the "ego" of a given point, which are a collection of points that are directly connected to the focal node. In this project, the ego network of a publication or proposal point is made up of all the author names attributed to that publication or proposal. If the author name matches one of the 739 authors that are plotted, they will be displayed. For an author point, its coauthorship network is made up of all authors that have been listed with the given author point as co authors in any publications or proposals.</p>
+        <br>
+        <p><strong>Q: What features does this website have?</strong> <br> Users can explore and see insights into all 44,641 publication, proposal, and author data points. Proposals include grant and sponsor information, in addition to author names, field/ subfield, and title which are present in publications. Color modes for the scatterplot include categorizing by research category (includes all data points), academic fields (publications and proposals), sponsors (proposals), and award status/ amount (proposals). Clicking on any of the legend categories highlights points in that category. Users can use the kde plot (kernel density estimate) to view the density of research categories interchangeably in addition to a hexbin plot showing the hit rate of proposals awarded.</p>
+    </div>
+</body>
+</html>

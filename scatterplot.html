@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<html>
+
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+    <script src="https://unpkg.com/d3fc"></script>
+    <title>Embeddings Scatterplot</title>
+    <link href='https://fonts.googleapis.com/css?family=Inria+Serif' rel='stylesheet'>
+
+</head>
+<style> 
+    html {
+        height: 100%;
+        font-size: 100%;
+    } 
+    
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden; 
+        font-family: 'Inria Serif', sans-serif;
+        background-color: #f9f9f9;
+        font-size: 0.875rem;
+        color: #002E63;
+    }
+    #my_scatter {
+        width: 60%;
+        height: 85%;
+    }
+    .tooltip {	
+        position: absolute;			
+        text-align: left;			
+        width: 15.6rem;;					
+        height: auto;					
+        padding: 0.625rem;				
+        font: 0.75rem 'Inria Serif', sans-serif;		
+        background: white;	
+        border: 1px solid #ccc;		
+        border-radius: 8px;			
+        pointer-events: none;			
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        opacity: 0;
+        color: #002E63;
+        z-index: 9999;
+    }
+    .card {
+        padding: 0px;
+        min-height:0;
+        font-family: 'Inria Serif';
+    }
+    .scatter_container {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+    }
+    #panel {
+        width: 40%;
+        max-height: 100vh;
+        display: flex;
+        overflow: hidden;
+        flex-direction: column;
+        gap: 0.625rem;
+        padding: 0.625rem;
+        box-sizing: border-box;
+    }
+    #color-mode-select {
+        font-family: 'Inria Serif';
+        font-size: 0.875rem;
+        cursor: pointer;
+    }
+    .inactive-highlight {
+        text-decoration: line-through;
+        opacity: 0.5;
+    }
+    #options {
+        display: flex;
+        flex-direction: row;
+        gap: 120px;
+    }
+    #scatterplot-button a p, 
+    #kdeplot-button a p, 
+    #about-button a p {
+        font-size: 1.125rem !important; 
+    }
+    #kde-control a {
+        font-family: 'Inria Serif';
+        cursor: pointer;
+    }
+    #kde-button:hover {
+        scale: 1.1;
+    }
+    #scatterplot-button:hover {
+        scale: 1.1;
+        background-color: #d6d6d6;
+        transition: background-color 0.3s ease-in-out;
+    }
+    #about-button:hover {
+        scale: 1.1;
+        background-color: #d6d6d6;
+        transition: background-color 0.3s ease-in-out;
+    }
+    #kdeplot-button:hover {
+        scale: 1.1;
+        background-color: #d6d6d6;
+        transition: background-color 0.3s ease-in-out;
+    }
+    #header-container {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 0.875rem;
+    }
+    #outer-header-container {
+        display: flex;
+        justify-content: space-between;
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem;
+        margin-right: 1rem;
+    }
+    #header-main-content {
+        display: flex;
+        justify-content: space-between; 
+        align-items: center;
+        width: 100%;
+    }
+    .header-line {
+        height: 1px;             
+        background-color: #002E63; 
+        width: 95%;             
+        margin-top: -7px;       
+        margin-left: 100px;
+        margin-right: 20px;
+    }
+    #buttons {
+        display: flex;
+        gap: 40px;
+    }
+    #color-mode-control {
+        font-size: 1rem;
+    }
+    #color-mode-select {
+        font-size: 1rem;
+        color: #002E63;
+    }
+    #checkboxes {
+        font-size: 1rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        margin-right: 40px;
+        user-select: none;
+    }
+    .checkbox_group {
+        display: flex;
+        align-items: center;
+    }
+    .disabled-text {
+        text-decoration: line-through;
+        color: #999; 
+        opacity: 0.6;
+    }
+    .toggle-label {
+        transition: all 0.3s ease;
+        color: #002E63; 
+        font-weight: bold;
+        cursor: pointer; 
+        display: inline-block;
+        padding: 8px 12px;
+    }
+    .inactive-text {
+        text-decoration: line-through;
+        color: #B0B0B0; 
+        opacity: 0.6;
+    }
+    .toggle-label:hover {
+        opacity: 0.7;
+        cursor: pointer;
+    }
+    #legend {
+        flex-shrink: 0; 
+        max-height: 30vh; 
+        overflow-y: auto;
+    }
+
+    #info {
+        flex: 1; 
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; 
+        min-height: 0; 
+        padding-bottom: 10px;
+    }
+    #search {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 0px;
+    }
+    .ego_network_toggle {
+        position: absolute;
+        bottom: 50px;
+        right: 250px;        
+        cursor: pointer;
+        z-index: 1000;
+    }
+    .ego-label {
+        cursor: pointer !important;
+        padding: 5px;
+
+    }
+    .ego_network_toggle:hover {
+        scale: 1.1;
+        cursor: pointer;
+        background-color: #d6d6d6;
+        transition: background-color 0.3s ease-in-out;
+    }
+    .ego_network_toggle.active {
+        background-color: #d6d6d6;
+        scale: 1.1;
+    }
+    
+
+
+</style>
+<body>
+    <div id = outer-header-container>
+        <div id = "header-main-content">
+            <div id = 'header-container'>
+                <div id = "logo">
+                    <img src="/images/cdh.png" alt="CDH Logo" width="70px" height="80px">
+                </div>
+                <div class = "header">
+                    <h1>uva research insights scatterplot</h1>
+                </div>
+            </div>
+            <div id = 'buttons'>
+                <div id = 'scatterplot-button'>
+                    <a href = "scatterplot.html" style="text-decoration: none; color: #002E63;">
+                        <p>scatterplot</p>
+                    </a>
+                </div>
+                <div id = 'kdeplot-button'>
+                    <a href = "kdeplot.html" style="text-decoration: none; color: #002E63;">
+                        <p>density plot</p>
+                    </a>
+                </div>
+                <div id = 'about-button'>
+                    <a href = "about.html" style="text-decoration: none; color: #002E63;">
+                        <p>about</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="header-line"></div>
+    </div>
+    <div class = "scatter_container">
+        <div id="my_scatter"></div>
+        <div id = "panel">
+            <div id = "controls" class = "card">
+                <div id = "checkboxes">
+                    <div class = "checkbox_group">
+                        <input type="checkbox" id="publications" checked style="display: none;">
+                        <label for="publications" class="toggle-label"> publications</label>
+                    </div>
+                    <div class = "checkbox_group">
+                        <input type="checkbox" id="proposals" checked style="display: none;">
+                        <label for="proposals" class="toggle-label"> proposals</label>
+                    </div> 
+                    <div class = "checkbox_group">
+                        <input type="checkbox" id="authors" checked style="display: none;">
+                        <label for="authors" class="toggle-label"> authors</label>
+                    </div>
+                </div>
+                <br>
+                <br>
+                <div id = "options">
+                    <div id = "color-mode-control">
+                        <label for="color-mode-select">color mode:</label>
+                        <select id="color-mode-select">
+                            <option value = "research category" selected>research category</option>
+                            <option value = "field">field</option>
+                            <option value="direct sponsor">direct sponsor</option>
+                            <option value="prime sponsor">prime sponsor</option>
+                            <option value="mixed sponsor">mixed sponsor</option>
+                            <option value="proposal status">proposal status</option>
+                            <option value="amount awarded">amount awarded</option>
+                        </select>
+                    </div>
+                </div>
+                <br>
+                <div id = "search">
+                    <div id = "search bar">
+                        <input type = "text" id="search-input" placeholder="search by title, pi, or author name" style="width: 300px; padding: 8px; margin-top: 7px; margin-right: 0px; box-sizing: border-box; font-family: 'Inria Serif'; color: #002E63;">
+                    </div>
+                    <div id = "clear">
+                        <a href="#" id="clear-search" style="font-family: 'Inria Serif'; font-size: 0.875rem; margin-left: 8px; color: #002E63; text-decoration: none;">clear search</a>
+                    </div>
+                </div>
+            </div>
+            <div id = "legend" class = "card">
+                
+            </div>
+            <div id = info-card>
+                <div id = info-holder>
+                    <div id = "info" class = "card">
+                        <p>click on a point in the scatterplot to see more information.
+                        use mouse scroll to zoom in and out, click and drag to pan. double tap a point to zoom in.</p>
+                    </div>
+                </div>
+                <div class = "ego_network_toggle">
+                    <input type="checkbox" id="ego" checked style="display: none;">
+                    <label for="ego" class="ego-label"></label>
+                </div> 
+            </div>
+        </div>
+    </div>
+
+    <script type = module>
+
+        import { updateLegend } from './updateLegend.js';
+
+        let quadtree;
+
+        d3.csv("pub_prop_author.csv").then(function(rawData) {
+            //map and filter data
+            const cleanData = rawData.map(d => {
+                return {
+                    ...d,
+                    umap_x: parseFloat(d.umap_x),
+                    umap_y: parseFloat(d.umap_y),
+                    Type: d.Type,
+                    PI: d['Proposal PI'] || 'NA',
+                    proposal_status: d['Proposal Status'] || 'NA',
+                    award_amount: +d.award_amount || 0,
+                    sponsor: d.sponsor || 'NA',
+                    proposal_direct_sponsor_category: d['Proposal Direct Sponsor Category'] || 'NA',
+                    proposal_direct_sponsor: d['Proposal Direct Sponsor'] || 'NA',
+                    proposal_prime_sponsor_category: d['Proposal Prime Sponsor Category'] || 'NA',
+                    proposal_prime_sponsor: d['Proposal Prime Sponsor'] || 'NA',
+                    sponsor_category: d['sponsor_category'] || 'NA',
+                    authorName: d['AuthorName'] || 'NA',
+                    department: d['Department'] || 'NA'
+                };
+            }).filter(d => !isNaN(d.umap_x) && !isNaN(d.umap_y));
+
+            const data = cleanData;           
+
+            quadtree = d3.quadtree()
+                .x(d => d.umap_x)
+                .y(d => d.umap_y)
+                .addAll(data);
+            
+            const getTop = (colName, i) => {
+                const counts = d3.rollup(data, v => v.length, d => d[colName]);
+                return Array.from(counts)
+                    .filter(d => d[0] && d[0].toLowerCase() !== 'na' && d[0] !== '')
+                    .sort((a, b) => b[1] - a[1]) 
+                    .slice(0, i)               
+                    .map(d => d[0].toLowerCase()); 
+            };
+
+            const topDirect = getTop('proposal_direct_sponsor_category',5);
+            const topPrime = getTop('proposal_prime_sponsor_category',5);
+            const topMixed = getTop('sponsor_category',5);
+            const topFields = getTop('field_name', 10);
+
+            const getSponsorCategory = (d, mode = colorMode) => {
+                let targetColumn = "proposal_direct_sponsor_category";
+                let topList = topDirect;
+
+                if (mode === "prime sponsor") {
+                    targetColumn = "proposal_prime_sponsor_category";
+                    topList = topPrime;
+                } else if (mode === "mixed sponsor") {
+                    targetColumn = "sponsor_category";
+                    topList = topMixed;
+                }
+                const value = d[targetColumn] ? d[targetColumn].toLowerCase() : 'na';
+
+                if (value === 'na' || value === '') {
+                    return 'missing';
+                }
+
+                return topList.includes(value) ? value : 'other'   
+                   
+            };
+
+            const getAwardedStatus = (d) => {
+                const originalStatus = d['Proposal Status'].toLowerCase();
+                if (originalStatus.includes('awarded')) {
+                    return 'awarded';
+                } else if (originalStatus.includes('not funded')) {
+                    return 'not funded';
+                } else {
+                    return 'other';
+                }
+            }
+
+            const getFieldCategory = (d) => {
+                const value = d['field_name'] ? d['field_name'].toLowerCase() : 'na';
+
+                if(value.includes('Economics, Econometrics and Finance'.toLowerCase())) {
+                    return 'Economics, Econometrics and Finance'.toLowerCase();
+                }
+                if(value.includes('health professions')) {
+                    return 'other';
+                }
+
+                return topFields.includes(value) ? value : 'other'   
+            };
+
+            const min_x = d3.min(data, d => d.umap_x);
+            const max_x = d3.max(data, d => d.umap_x);
+
+            const min_y = d3.min(data, d => d.umap_y);
+            const max_y = d3.max(data, d => d.umap_y);
+
+            const x = d3.scaleLinear().domain([min_x, max_x]).nice();
+            const y = d3.scaleLinear().domain([min_y, max_y]).nice();
+
+            let showProposals = true;
+            let showPublications = true;
+            let showAuthors = true;
+            let highlightData = []; 
+            let colorMode = 'research category';
+            let highlightedCategories = [];
+            let searchTerm = "";
+            let egoMode = false;
+            let egoAnchor = null;
+            let networkSet = new Set();
+
+            const tooltip = d3.select("body").append("div").attr("class", "tooltip");
+            const clearButton = d3.select("#clear-search");
+
+            const colorScale = d3.scaleOrdinal()
+                .domain([0, 1, 2]) 
+                .range(["#1f77b4", "#ff7f0e", "#2ca02c"]);
+
+            const categoryColorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+            const statusColorScale = d3.scaleOrdinal()
+                .domain(['awarded', 'not funded', 'other'])
+                .range(['#1A99E6', '#D67229', '#708090']);
+
+            const amountExtent = d3.extent(data, d => +d['award_amount']);
+            const amountColorScale = d3.scaleSequentialLog(d3.interpolateGnBu)
+                .domain([1, amountExtent[1]]);
+
+            const fillColor = fc.webglFillColor();
+
+            const toggleCategoryHighlight = (category) => {
+                const index = highlightedCategories.indexOf(category);
+                
+                if (index === -1) {
+                    highlightedCategories.push(category);
+                } else {
+                    highlightedCategories.splice(index, 1);
+                }
+
+                updateChart(data);
+                updateLegend(data, colorMode, getSponsorCategory, getAwardedStatus, getFieldCategory, colorScale, categoryColorScale, statusColorScale, amountColorScale, amountExtent, highlightedCategories, toggleCategoryHighlight);
+                render();
+            };
+
+            //search term filtering
+            const matchesSearch = (d) => {
+                if(searchTerm === "") return true;
+
+                const title = d.Title ? d.Title.toLowerCase() : '';
+                const pi = d['Proposal PI'] ? d['Proposal PI'].toLowerCase() : '';
+                const author = d.authorName ? d.authorName.toLowerCase() : '';
+                return title.includes(searchTerm) || pi.includes(searchTerm) || author.includes(searchTerm);
+            }
+            const rebuildNetworkSet = () => {
+                networkSet.clear();
+                if (!egoAnchor) return;
+
+                if (egoAnchor.Type === 'author') {
+                    const targetName = egoAnchor.authorName.toLowerCase();
+                    console.log("Rebuilding ego network for author:", targetName);
+                    
+                    data.forEach(d => {
+                        if ((d.Type === 'proposal' || d.Type === 'publication') && 
+                            d.authorName && 
+                            d.authorName.toLowerCase().includes(targetName)) {
+                            
+                            d.authorName.split(',').forEach(name => {
+                                networkSet.add(name.trim().toLowerCase());
+                            });
+                        }
+                    });
+                } 
+                else if (egoAnchor.authorName) {
+                    egoAnchor.authorName.split(',').forEach(name => {
+                        networkSet.add(name.trim().toLowerCase());
+                    });
+                }
+            };
+
+            const isPartofEgoNetwork = (d) => {
+                if (!egoAnchor) return false;
+                if (d === egoAnchor) return true;
+
+                if (d.Type !== 'author') {
+                    return false;
+                }
+                return networkSet.has(d.authorName.toLowerCase());
+            };
+
+            const updateChart = (displayData) => {
+                const isSponsorMode = (colorMode === "direct sponsor" || colorMode === "prime sponsor" || colorMode === "mixed sponsor");   
+                if (isSponsorMode || colorMode === "proposal status" || colorMode === "amount awarded") {
+                    showPublications = false
+                    showAuthors = false;
+
+                    d3.select("label[for='publications']")
+                        .classed("disabled-text", true)
+                        .classed("inactive-text", false);
+                    d3.select("label[for='authors']")
+                        .classed("disabled-text", true)
+                        .classed("inactive-text", false);
+                }
+                else if (colorMode === "field") {
+                    showAuthors = false;
+
+    
+                    d3.select("label[for='authors']")
+                        .classed("disabled-text", true)
+                        .classed("inactive-text", false);
+                } else {
+                    d3.select("label[for='publications']")
+                        .classed("disabled-text", false)
+                        .classed("inactive-text", !showPublications);   
+                    d3.select("label[for='authors']")
+                        .classed("disabled-text", false)
+                        .classed("inactive-text", !showAuthors);  
+                }
+            
+                fillColor.value(d => {
+                    if(egoMode) {
+                        if(!isPartofEgoNetwork(d)) {
+                            return [0.8, 0.8, 0.8, 0.7]; 
+                        }
+                    }
+                    
+                    const isMatch = matchesSearch(d);
+                    
+                    if(searchTerm !== '' && !isMatch) {
+                        return [0.8, 0.8, 0.8, 0.2]; 
+                    }
+
+                    if (colorMode === 'research category') {
+                        let typeValue = 0; 
+                        if (d.Type === 'proposal') typeValue = 1;
+                        if (d.Type === 'author') typeValue = 2;
+                        const color = d3.color(colorScale(typeValue));
+                        return [color.r / 255, color.g / 255, color.b / 255, 0.8];
+                    }
+                    else if (['direct sponsor', 'prime sponsor', 'mixed sponsor'].includes(colorMode)) {
+                        const category = getSponsorCategory(d, colorMode);
+                        if (category === 'missing') {
+                            return [0.8, 0.8, 0.8, 1.0]; 
+                        }
+                        const color = d3.color(categoryColorScale(category));
+                        return [color.r / 255, color.g / 255, color.b / 255, 0.94]; 
+                    }
+                    else if (colorMode === 'proposal status') {
+                        const status = getAwardedStatus(d);
+                        const color = d3.color(statusColorScale(status));
+                        return [color.r / 255, color.g / 255, color.b / 255, 1.0];
+                    }
+                    else if (colorMode === 'amount awarded') {
+                        const amount = +d['award_amount'];
+                        if (amount <= 0) {
+                            return [0.39, 0.39, 0.39, 0.6]; 
+                        }
+                        const logAmount = Math.log10(+d['HURON Authorized Amount']); 
+                        const color = d3.color(amountColorScale(amount));
+                        return [color.r / 255, color.g / 255, color.b / 255, 1.0];
+                    }
+                    else if (colorMode === 'field') {
+                        const fieldCat = getFieldCategory(d);
+                        if (fieldCat === 'other') {
+                            return [0.8, 0.8, 0.8, 1.0]; 
+                        }
+                    
+                        const color = d3.color(categoryColorScale(fieldCat));
+                        return [color.r / 255, color.g / 255, color.b / 255, 0.94]; 
+                    }                   
+                })  
+            }
+
+            const scatter = fc.seriesWebglPoint()
+                    .type(d3.symbolCircle)
+                    .size(d => (egoMode && d === egoAnchor) ? 130 : 40)
+                    .xScale(x)
+                    .yScale(y)
+                    .crossValue(d => d.umap_x)
+                    .mainValue(d => d.umap_y)
+                    .decorate(program => {
+                        fillColor(program);
+                        const context = program.context();
+                        context.blendFunc(context.SRC_ALPHA, context.ONE_MINUS_SRC_ALPHA);
+                    });
+
+            const highlightSeries = fc.seriesSvgPoint()
+                .type(d3.symbolCircle)
+                .size(40) 
+                .xScale(x)
+                .yScale(y)
+                .crossValue(d => d.umap_x)
+                .mainValue(d => d.umap_y)
+                .decorate(selection => {
+                    selection.select('path')
+                        .style('fill', 'none')
+                        .style('stroke', 'black')
+                        .style('stroke-width', 0.6);
+                });
+
+            
+            const highlightMulti = fc.seriesSvgMulti()
+                .series([highlightSeries])
+                .mapping((data, index, series) => highlightData);
+
+
+            const chart = fc
+                .chartCartesian(x, y)
+                .webglPlotArea(scatter)       
+                .svgPlotArea(highlightMulti) 
+                .xTickFormat(() => "")
+                .yTickFormat(() => "");
+
+            const render = () => {
+
+                //filter data based on checkboxes and highlighted categories
+                let displayData = data;
+
+                if (highlightedCategories.length > 0) {
+                    if (['direct sponsor', 'prime sponsor', 'mixed sponsor'].includes(colorMode)) {
+                        displayData = displayData.filter(d => highlightedCategories.includes(getSponsorCategory(d, colorMode)));
+                    }
+                    else if (colorMode === 'proposal status') {
+                        displayData = displayData.filter(d => highlightedCategories.includes(getAwardedStatus(d)));
+                    }
+                    else if (colorMode === 'field') {
+                        displayData = displayData.filter(d => highlightedCategories.includes(getFieldCategory(d)));
+                    }
+                }
+                
+
+                displayData = displayData.filter(d => {
+                    
+                    if (d.Type === 'proposal' && !showProposals) return false;
+                    if (d.Type === 'publication' && !showPublications) return false;
+                    if (d.Type === 'author' && !showAuthors) return false;
+                    return true;
+                });
+
+                displayData.forEach(d => {
+                    d._isMatch = matchesSearch(d);
+                });
+
+                const interactiveData = displayData.filter(d => {
+                    // Must match search
+                    if (searchTerm !== "" && !d._isMatch) return false;
+
+                    if (egoMode) {
+                        return isPartofEgoNetwork(d); 
+                    }
+                    
+                    // Must match category highlights if any are active
+                    if (highlightedCategories.length > 0) {
+                        if (colorMode === 'field') return highlightedCategories.includes(getFieldCategory(d));
+                        if (['direct sponsor', 'prime sponsor', 'mixed sponsor'].includes(colorMode)) {
+                            return highlightedCategories.includes(getSponsorCategory(d, colorMode));
+                        }
+                        if (colorMode === 'proposal status') return highlightedCategories.includes(getAwardedStatus(d));
+                    }
+                    return true;
+                });
+
+                quadtree = d3.quadtree()
+                    .x(d => d.umap_x)
+                    .y(d => d.umap_y)
+                    .addAll(interactiveData);
+
+                displayData.sort((a, b) => { //draw points with missing values first
+                    //search term priority
+                    if (a._isMatch && !b._isMatch) return 1; 
+                    if (!a._isMatch && b._isMatch) return -1;
+
+                    const isSponsorMode = (colorMode === "direct sponsor" || colorMode === "prime sponsor" || colorMode === "mixed sponsor");
+                    if(isSponsorMode) {
+                        const catA = getSponsorCategory(a, colorMode);
+                        const catB = getSponsorCategory(b, colorMode);
+                        if (catA === 'missing' && catB !== 'missing') return -1;
+                        if (catA !== 'missing' && catB === 'missing') return 1;
+                    }
+                    if (egoMode) {
+                        const aIn = isPartofEgoNetwork(a);
+                        const bIn = isPartofEgoNetwork(b);
+                        if (!aIn && bIn) return -1; 
+                        if (aIn && !bIn) return 1; 
+                    }
+
+                    if(colorMode === 'proposal status') {
+                        const statusA = getAwardedStatus(a);
+                        const statusB = getAwardedStatus(b);
+                        if (statusA === 'other' && statusB !== 'other') return -1;
+                        if (statusA !== 'other' && statusB === 'other') return 1;
+                    }
+                    if(colorMode === 'amount awarded') {
+                        const amtA = +a['award_amount'];
+                        const amtB = +b['award_amount'];
+                        if (amtA <= 0 && amtB > 0) return -1;
+                        if (amtA > 0 && amtB <= 0) return 1;
+                    }
+                    if(colorMode === 'field') {
+                        const fieldA = getFieldCategory(a);
+                        const fieldB = getFieldCategory(b);
+                        if (fieldA === 'other' && fieldB !== 'other') return -1;
+                        if (fieldA !== 'other' && fieldB === 'other') return 1;
+                    }
+                    //draw authors last
+                    const typeWeights = {
+                        'publication': 0,
+                        'proposal': 1,
+                        'author': 2
+                    };
+                    const weightA = typeWeights[a.Type.toLowerCase()] || 0;
+                    const weightB = typeWeights[b.Type.toLowerCase()] || 0;
+
+                    return weightA - weightB;                    
+                });
+
+                fillColor.data(displayData);  
+ 
+                updateChart(displayData);   
+
+                d3.select('#my_scatter')
+                    .datum(displayData)
+                    .call(chart);
+            };
+
+            const clear = (search = false, legend = false) => {
+                if(search) {
+                    const searchInput = d3.select("#search-input");
+                    searchInput.property("value", "");
+                    searchTerm = "";
+                }
+                if(legend) {
+                    highlightedCategories = [];
+                }
+                updateChart(data);
+                updateLegend(data, colorMode, getSponsorCategory, getAwardedStatus, getFieldCategory, colorScale, categoryColorScale, statusColorScale, amountColorScale, amountExtent, highlightedCategories, toggleCategoryHighlight);
+                render();
+            }
+
+            clearButton.on("click", (event) => {
+                event.preventDefault();
+                clear(true, false); 
+            });
+
+            function attachListeners() {
+                const plotArea = d3.select('#my_scatter d3fc-svg.plot-area');
+                plotArea.style('pointer-events', 'all');
+
+                let lastClosest = null;
+
+                plotArea.on('mousemove', (event) => {
+                    const [mouseX, mouseY] = d3.pointer(event);
+                    const xVal = x.invert(mouseX);
+                    const yVal = y.invert(mouseY);
+
+                    const pixelRadius = 20;
+                    const xRadius = Math.abs(x.invert(mouseX) - x.invert(mouseX + pixelRadius));
+                    const yRadius = Math.abs(y.invert(mouseY) - y.invert(mouseY + pixelRadius));
+                    const searchRadius = Math.max(xRadius, yRadius);
+
+                    let closest = quadtree.find(xVal, yVal, searchRadius);
+
+                    if (egoMode && closest && !isPartofEgoNetwork(closest)) {
+                        closest = null;
+                    }
+
+                    if (closest !== lastClosest) {
+                        lastClosest = closest;
+
+                        let isVisible = false;
+                        if(closest) {
+                            const searchMatch = matchesSearch(closest);
+
+                            const typeMatch = (closest.Type === 'proposal' && showProposals) ||
+                                (closest.Type === 'publication' && showPublications) ||
+                                (closest.Type === 'author' && showAuthors);
+                            let categoryMatch = true;
+
+                            if (highlightedCategories.length > 0) {
+                                if (['direct sponsor', 'prime sponsor', 'mixed sponsor'].includes(colorMode)) {
+                                    categoryMatch = highlightedCategories.includes(getSponsorCategory(closest, colorMode));
+                                }
+                                else if (colorMode === 'proposal status') {
+                                    categoryMatch = highlightedCategories.includes(getAwardedStatus(closest));
+                                }
+                                else if (colorMode === 'field') {
+                                    categoryMatch = highlightedCategories.includes(getFieldCategory(closest));
+                                }
+                            }
+                            isVisible = typeMatch && categoryMatch && closest._isMatch;
+
+                        }
+                        
+
+                        if (closest && isVisible) {
+                            highlightData = [closest]; 
+                            d3.select("#my_scatter").style("cursor", "pointer");
+                            tooltip.style("opacity", 0.9);
+                            if(closest.Type === "author") {
+                                tooltip.html(
+                                `<strong> ${closest.authorName} </strong> <br> 
+                                `)
+                                    .style("left", (event.pageX + 15) + "px")
+                                    .style("top", (event.pageY - 20) + "px");
+                            }
+                            else {
+                                tooltip.html(
+                                `
+                                <div style="font-size: 0.8em; margin-bottom: 4px;">
+                                    ${closest.field_name} &middot; ${closest.subfield_name}
+                                </div>
+                                <h3 style="margin: 0; line-height: 1.2; font-size: 0.9em;">
+                                    ${closest.Title}
+                                </h3>
+                                <p style="margin-top: 4px; font-size: 0.8em; color: #444;">
+                                    <strong>${closest.PI}</strong>
+                                </p>
+                                
+                                `)
+                                    .style("left", (event.pageX + 15) + "px")
+                                    .style("top", (event.pageY - 20) + "px");
+                            }
+                            
+                        } else {
+                            highlightData = []; 
+                            tooltip.style("opacity", 0);
+
+                            d3.select('#my_scatter').style("cursor", "default");
+                        }
+
+                        render();
+                    }
+                });
+
+                plotArea.on('click', () => {
+                    if (highlightData.length > 0) {
+                        const d = highlightData[0];
+
+                        egoAnchor = d;
+                        const egoLabel = d3.select("label[for='ego']");
+                        const egoContainer = d3.select(".ego_network_toggle");
+                        if(colorMode === 'research category') {
+                            if(d.Type === 'author') {
+                                egoLabel.text(egoMode ? "hide co-authorship" : "show co-authorship");
+                                egoContainer.style('opacity', '1').style('pointer-events', 'all');
+                            }
+                            else if (d.Type === 'proposal' || d.Type === 'publication') {
+                                egoLabel.text(egoMode ? "hide ego network" : "show ego network");
+                                egoContainer.style('opacity', '1').style('pointer-events', 'all');
+                            } else {
+                                egoContainer.style('opacity', '0').style('pointer-events', 'none');
+                            }
+                        }
+                        else {
+                            egoContainer.style('opacity', '0').style('pointer-events', 'none');
+                        }
+                        
+                        
+                        if(egoMode) {
+                            rebuildNetworkSet();
+                            updateChart(data);
+                            render();
+                        }
+                        
+                        const piName = d['Proposal PI'] || 'NA';
+                        const fullAuthorList = d.authorName || "";
+
+                        const otherAuthorsArr = fullAuthorList
+                            .split(',')
+                            .map(name => name.trim())
+                            .filter(name => name !== piName && name !== "");
+
+                        const fullOtherAuthors = otherAuthorsArr.join(', ').replace(/'/g, "\\'");
+                        const charLimit = 200;
+                        const needsTruncation = fullOtherAuthors.length > charLimit;
+                        const shortAuthors = needsTruncation 
+                            ? fullOtherAuthors.substring(0, charLimit).replace(/'/g, "\\'") 
+                            : fullOtherAuthors;
+
+                        const formattedAmount = Number(d['award_amount']).toLocaleString('en-US', {
+                            style: 'currency',
+                            currency: 'USD',
+                            maximumFractionDigits: 0
+                        });
+                        if (d.Type === 'author') {
+                            d3.select("#info").html(`
+                                <hr style="border: 0; border-top: 1px solid #eee; margin: 12px 0;">
+                                <h3 style="margin: 0; line-height: 1.2; font-size: 1.2em;">
+                                    <strong>${d.authorName}</strong>
+                                </h3> 
+                                <p style="margin-top: 4px; margin-bottom: 12px; font-size: 0.97em; color: #444;">
+                                    ${d['department']}
+                                </p>
+                            `);      
+                                            
+                        }
+                        else if ( d.Type === 'proposal') {
+                            const authorSuffix = otherAuthorsArr.length > 0 ? `, ${fullOtherAuthors}` : "";
+                            d3.select("#info").html(`
+                                <hr style="border: 0; border-top: 1px solid #eee; margin: 12px 0;">
+                                <div style="font-size: 0.75em; letter-spacing: 1px; margin-bottom: 4px;">
+                                    ${d.field_name} &middot; ${d.subfield_name}
+                                </div>
+                                <h3 style="margin: 0; line-height: 1.2; font-size: 1.2em;">
+                                    ${d.Title}
+                                </h3>
+                                <p style="margin-top: 4px; margin-bottom: 12px; font-size: 0.97em; color: #444;">
+                                    <strong>${piName}</strong> <span style="font-size: 0.95em; color: #888;">(PI)</span>${authorSuffix}
+                                </p>
+                                <div style="font-size: 0.9em; line-height: 1.6;">
+                                    <div style="margin-bottom: 4px;">
+                                        <span>Sponsor:</span> ${d.sponsor_category} 
+                                        <span style="margin: 0 8px;">|</span> 
+                                        <span>Direct:</span> ${d['proposal_direct_sponsor_category']}
+                                        <span style="margin: 0 8px;">|</span> 
+                                        <span>Prime:</span> ${d['proposal_prime_sponsor_category']}
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 10px; font-size: 0.9em;">
+                                    Awarded: ${formattedAmount}
+                                </div>
+                            `);
+                        }
+                        else {
+                            d3.select("#info").html(`
+                                <hr style="border: 0; border-top: 1px solid #eee; margin: 12px 0;">
+                                <div style="font-size: 0.75em; letter-spacing: 1px; margin-bottom: 4px;">
+                                    ${d.field_name} &middot; ${d.subfield_name}
+                                </div>
+                                <h3 style="margin: 0; line-height: 1.2; font-size: 1.2em;">
+                                    ${d.Title}
+                                </h3>
+                                <div style="flex: 1; min-height: 0; max-height: 100px; overflow-y: auto; margin-bottom: 180px; margin-top: 4px; border-bottom: 1px solid #eee;">
+                                    <div style="margin-top: 4px; margin-bottom: 12px; font-size: 0.95em; color: #444; line-height: 1.4;">
+                                        <strong>${piName}</strong> <span style="font-size: 0.85em; color: #888;">(PI)</span>${otherAuthorsArr.length > 0 ? ', ' : ''}
+                                        
+                                        <span id="author-text">${shortAuthors}</span>
+                                        
+                                        ${needsTruncation ? `
+                                            <span id="toggle-btn" 
+                                                style="color: #007bff; cursor: pointer; font-weight: bold; margin-left: 5px; text-decoration: underline;" 
+                                                onclick="
+                                                    const textSpan = document.getElementById('author-text');
+                                                    if (this.innerText === '(show more)') {
+                                                        textSpan.innerText = '${fullOtherAuthors}';
+                                                        this.innerText = ' (show less)';
+                                                    } else {
+                                                        textSpan.innerText = '${shortAuthors}';
+                                                        this.innerText = ' (show more)';
+                                                    }
+                                                ">
+                                                (show more)
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `);
+                        }
+                    }
+                });
+                
+                plotArea.on('mouseleave', () => {
+                    highlightData = [];
+                    tooltip.style("opacity", 0);
+                    render();
+                });
+            }
+
+            d3.selectAll(".toggle-label").on("mouseenter", function() {
+                // Only show pointer if not disabled
+                if (d3.select(this).classed("disabled-text")) {
+                    d3.select(this).style("cursor", "not-allowed");
+                } else {
+                    d3.select(this).style("cursor", "pointer");
+                }
+            });
+
+            const handleCheckboxChange = (type) => {
+                const currentActive = [];
+                if (showPublications) currentActive.push('publications');
+                if (showProposals) currentActive.push('proposals');
+                if (showAuthors) currentActive.push('authors');
+
+                const isClickedActive = currentActive.includes(type);
+                
+
+                if(colorMode === 'field') {
+                    //only pub and prop - clicking one disables the other - clicking it again makes both visible again
+                    //clicking
+                    if (isClickedActive) { 
+                        if (currentActive.length === 1 && currentActive[0] === type) {
+                            showPublications = true;
+                            showProposals = true;
+                            console.log("reset both to show");
+                        }
+                        else {
+                            if (type === 'publications') {
+                                showProposals = false;
+                                showPublications = true;
+                            } else if (type === 'proposals') {
+                                showPublications = false;
+                                showProposals = true;
+                            }
+                            console.log("toggle clicked");
+                        }      
+                    }
+                    else {
+                        if (type === 'publications') {
+                            showPublications = true;
+                        } else if (type === 'proposals') {
+                            showProposals = true;
+                        }
+                        console.log("activate clicked");
+                    }
+
+                }
+                
+                else if(colorMode === 'research category') {
+                    if (isClickedActive) {
+                        //if only one active and clicked again, reset all to show
+                        if (currentActive.length === 1 && currentActive[0] === type) {
+                            showPublications = true;
+                            showProposals = true;
+                            showAuthors = true;
+                            console.log("reset all to show");
+                        } else if (currentActive.length === 2 && currentActive.includes(type)) {
+                            //if two active and clicked one, turn off the clicked one, leave the other
+                            if (type === 'publications') {
+                                showPublications = false;
+                            } else if (type === 'proposals') {
+                                showProposals = false;
+                            } else if (type === 'authors') {
+                                showAuthors = false;
+                            }
+                            console.log("turn off clicked");
+                        } else {
+                            //if there are other active, clicking one displays it
+                            showPublications = (type === 'publications');
+                            showProposals = (type === 'proposals');
+                            showAuthors = (type === 'authors');
+                            console.log("show only clicked");
+                        }
+                    } else {
+                        //if clicked is not active yet, just activate it
+                        //if its the last one, activate all
+                        if (type === 'publications') {
+                            showPublications = true;
+                        } else if (type === 'proposals') {
+                            showProposals = true;
+                        } else if (type === 'authors') {
+                            showAuthors = true;
+                        }
+                        console.log("activate clicked");
+                    }
+                }
+                else {
+                    //other color modes - just toggle
+                    showProposals = (type === 'proposals') ? !showProposals : showProposals;                   
+                }
+
+                d3.select("label[for='publications']").classed("inactive-text", !showPublications);
+                d3.select("#publications").property("checked", showPublications);
+                d3.select("label[for='proposals']").classed("inactive-text", !showProposals);
+                d3.select("#proposals").property("checked", showProposals);
+                d3.select("label[for='authors']").classed("inactive-text", !showAuthors);
+                d3.select("#authors").property("checked", showAuthors);
+
+                console.log(`showPublications: ${showPublications}, showProposals: ${showProposals}, showAuthors: ${showAuthors}`);
+
+                updateChart(data);
+                render();
+            }
+
+            d3.select("label[for='publications']").on("click", function() {
+                if (colorMode !== 'research category' && colorMode !== 'field') return;
+                handleCheckboxChange('publications');
+            });
+
+            d3.select("label[for='proposals']").on("click", function() {
+                handleCheckboxChange('proposals');
+            });
+
+            d3.select("label[for='authors']").on("click", function() {
+                if (colorMode !== 'research category') return;
+                handleCheckboxChange('authors');
+            });
+
+            d3.select("label[for='ego']").on("click", function() {
+                egoMode = !egoMode;
+
+                if (egoMode) {
+                    d3.select(".ego_network_toggle").classed("active", egoMode);
+
+                    const text = (egoAnchor && egoAnchor.Type === 'author') ? " hide co-authorship" : " hide ego network";
+                    d3.select(this).text(text);
+                    clear(true, true);
+
+                    showAuthors = true;
+                    showProposals = true;
+                    showPublications = true;
+                    d3.select("#authors").property("checked", true);
+                    d3.select("label[for='authors']").classed("inactive-text", false);
+
+                    d3.select("#proposals").property("checked", true);
+                    d3.select("label[for='proposals']").classed("inactive-text", false);
+
+                    d3.select("#publications").property("checked", true);
+                    d3.select("label[for='publications']").classed("inactive-text", false);
+
+                    rebuildNetworkSet();
+                    
+                } else {
+                    d3.select(".ego_network_toggle").classed("active", false);
+                    const text = (egoAnchor && egoAnchor.Type === 'author') ? " show co-authorship" : " show ego network";
+                    d3.select(this).text(text);
+
+                    showAuthors = true;
+                    showProposals = true;
+                    showPublications = true;
+
+                    d3.select("#authors").property("checked", true);
+                    d3.select("label[for='authors']").classed("inactive-text", false);
+
+                    d3.select("#proposals").property("checked", true);
+                    d3.select("label[for='proposals']").classed("inactive-text", false);
+
+                    d3.select("#publications").property("checked", true);
+                    d3.select("label[for='publications']").classed("inactive-text", false);
+                    networkSet.clear();
+                }
+
+                updateChart(data);
+                updateLegend(data, colorMode, getSponsorCategory, getAwardedStatus, getFieldCategory, colorScale, categoryColorScale, statusColorScale, amountColorScale, amountExtent, highlightedCategories, toggleCategoryHighlight);
+                render();
+            });
+
+            const debounce = (func, delay) => {
+                let timeout;
+                return () => {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => {
+                        func();
+                    }, delay);
+                };
+            };
+            d3.select('#search-input').on('input', function() {
+                searchTerm = this.value.toLowerCase();
+                updateChart(data);
+                debounce(render, 300)();
+            });
+
+            d3.select('#color-mode-select').on('change', (event) => {
+                colorMode = event.target.value;
+
+                if(colorMode !== 'research category') {
+                    egoMode = false;
+                    d3.select(".ego_network_toggle").classed("active", false);
+                    d3.select("label[for='ego']").text("");
+                    networkSet.clear();
+                }
+
+                highlightedCategories = [];
+                if (colorMode === 'research category' || colorMode === 'field') {
+                    showPublications = true;
+                    showProposals = true;
+                    showAuthors = (colorMode === 'research category'); 
+
+                    d3.select("#publications").property("checked", true);
+                    d3.select("#proposals").property("checked", true);
+                    d3.select("#authors").property("checked", showAuthors);
+
+                    d3.select("label[for='publications']").classed("inactive-text", false);
+                    d3.select("label[for='proposals']").classed("inactive-text", false);
+                    d3.select("label[for='authors']").classed("inactive-text", !showAuthors);
+                    d3.select("label[for='publications']").classed("disabled-text", false);
+                    d3.select("label[for='authors']").classed("disabled-text", colorMode === 'field');
+        
+                }
+
+                updateChart(data);
+                updateLegend(data, colorMode, getSponsorCategory, getAwardedStatus, getFieldCategory, colorScale, categoryColorScale, statusColorScale, amountColorScale, amountExtent, highlightedCategories, toggleCategoryHighlight);
+                render();
+            });
+
+            const zoom = fc.zoom().on('zoom', render);
+            d3.select('#my_scatter').call(zoom, x, y);
+            
+            updateChart(data);
+            updateLegend(data, colorMode, getSponsorCategory, getAwardedStatus, getFieldCategory, colorScale, categoryColorScale, statusColorScale, amountColorScale, amountExtent, highlightedCategories, toggleCategoryHighlight);
+            render();
+
+            attachListeners();
+});
+        
+    
+    </script>
+
+</body>

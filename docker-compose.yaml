@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  visualization-app:
+    build: .
+    ports:
+      - "8080:80"  
+    volumes:
+      - ./pub_prop_author.csv:/usr/share/nginx/html/pub_prop_author.csv:ro

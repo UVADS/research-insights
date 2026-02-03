@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+
+<meta charset="utf-t">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<html>
+
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+    <script src="https://unpkg.com/d3fc"></script>
+    <script src="https://unpkg.com/d3-simple-slider"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-hexbin/0.2.2/d3-hexbin.min.js"></script>
+    <title>KDE Plot</title>
+    <link href='https://fonts.googleapis.com/css?family=Inria+Serif' rel='stylesheet'>
+
+</head>
+<style>
+    html, body {
+        height: 100vw;
+        margin: 0;
+        padding: 0;
+        overflow: hidden; 
+        font-family: 'Inria Serif', sans-serif;
+        background-color: #f9f9f9;
+        font-size: 1rem;
+        color:#002E63;
+    }
+    .header p {
+        font-family: 'Inria Serif', sans-serif;
+        font-size: 28px;
+        color: #002E63;
+    }
+    #chart-container {
+        width: 60%;
+        height: 100vh;
+    }
+    #chart-container svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+    .card {
+        padding: 0px;
+        min-height:0;
+        width: 100%;
+        font-size: 1rem;
+        font-family: 'Inria Serif';
+    }
+    .container {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+    }
+    #panel {
+        width: 40%;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px;
+        box-sizing: border-box;
+    }
+    .tooltip {	
+        position: absolute;			
+        text-align: left;			
+        width: auto;					
+        height: auto;					
+        padding: 10px;				
+        font: 12px 'Inria Serif', sans-serif;		
+        background: white;	
+        border: 1px solid #ccc;		
+        border-radius: 8px;		
+        pointer-events: none;	
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        opacity: 0;
+    }
+    #kde-metric {
+        font-size: 1rem;
+        font-family: 'Inria Serif';
+        color:#002E63;
+
+    }
+    #controls p{
+        font-family: 'Inria Serif';
+        margin-right: 30px;
+        font-size: 1rem;
+    }
+    #scatterplot-button:hover {
+        scale: 1.1;
+        background-color: #d6d6d6;
+        transition: background-color 0.3s ease-in-out;
+    }
+    #about-button:hover {
+        scale: 1.1;
+        background-color: #d6d6d6;
+        transition: background-color 0.3s ease-in-out;
+    }
+    #kdeplot-button:hover {
+        scale: 1.1;
+        background-color: #d6d6d6;
+        transition: background-color 0.3s ease-in-out;
+    }
+    #header-container {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 15px;
+    }
+    #outer-header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-direction: column;
+        padding: 20px;
+        margin-right: 20px;
+    }
+    #header-main-content {
+        display: flex;
+        justify-content: space-between; 
+        align-items: center;
+        width: 100%;
+    }
+    .header-line {
+        height: 1px;             
+        background-color: #002E63; 
+        width: 95%;             
+        margin-top: -7px;       
+        margin-left: 100px;
+        margin-right: 20px;
+    }
+    #buttons {
+        display: flex;
+        gap: 40px;
+    }
+    #slider-container p {
+        font-family: 'Inria Serif';
+        font-size: 1rem;
+    }
+    #slider-text {
+        font-size: 1rem;
+    }
+    #checkboxes {
+        font-size: 1rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        margin-right: 40px;
+    }
+    .checkbox_group {
+        display: flex;
+        align-items: center;
+    }
+    .disabled-text {
+        text-decoration: line-through;
+        color: #999; 
+        opacity: 0.6;
+        cursor: not-allowed !important;
+    }
+    .toggle-label {
+        transition: all 0.3s ease;
+        color: #002E63; 
+        font-weight: bold;
+        cursor: pointer; 
+        display: inline-block;
+        padding: 8px 12px;
+    }
+    .inactive-text {
+        text-decoration: line-through;
+        color: #B0B0B0; 
+        opacity: 0.6;
+    }
+    .toggle-label:hover {
+        opacity: 0.7;
+        cursor: pointer;
+    }
+   
+</style>
+<body>
+    <div id = outer-header-container>
+        <div id = "header-main-content">
+            <div id = 'header-container'>
+                <div id = "logo">
+                    <img src="/images/cdh.png" alt="CDH Logo" width="70px" height="80px">
+                </div>
+                <div class = "header">
+                    <h1>uva research insights density plot</h1>
+                </div>
+            </div>
+            <div id = 'buttons'>
+                <div id = 'scatterplot-button'>
+                    <a href = "scatterplot.html" style="text-decoration: none; color: #002E63; font-size: 1.25rem;">
+                        <p>scatterplot</p>
+                    </a>
+                </div>
+                <div id = 'kdeplot-button'>
+                    <a href = "kdeplot.html" style="text-decoration: none; color: #002E63; font-size: 1.25rem;">
+                        <p>density plot</p>
+                    </a>
+                </div>
+                <div id = 'about-button'>
+                    <a href = "about.html" style="text-decoration: none; color: #002E63; font-size: 1.25rem;">
+                        <p>about</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="header-line"></div>
+    </div>
+    
+    <div class = "container">
+        <div id="chart-container"></div>
+        <div id = "panel">
+            <div id = "checkboxes">
+                    <div class = "checkbox_group">
+                        <input type="checkbox" id="publication" checked style="display: none;">
+                        <label for="publication" class="toggle-label"> publications</label><br>
+                    </div>
+                    <div class = "checkbox_group">
+                        <input type="checkbox" id="proposals" checked style="display: none;">
+                        <label for="proposals" class="toggle-label"> proposals</label><br>
+                    </div> 
+                    <div class = "checkbox_group">
+                        <input type="checkbox" id="authors" checked style="display: none;">
+                        <label for="authors" class="toggle-label"> authors</label>
+                    </div>
+                </div>
+            <h2 id = "plot-type"></h2>
+            <div id = "controls" class = "card">
+            
+                <div id = "options">
+                    <div id = "kde-metric-container">
+                        <label for="kde-metric"></label>
+                        <select id="kde-metric">
+                            <option value="density" selected>density</option>
+                            <option value="hit_rate">hit rate</option>
+                        </select>
+                    </div>
+                </div>
+                <br>
+                <div id = "slider-container">
+                    <p id = "slider-text"></p>
+                    <div id = "slider"></div>
+                </div>
+                <br>
+                <br>
+                <p>move the sliding bar to toggle kde bandwidth or hexbin radius. change the dropdown menu to visualize different metrics.</p>
+                <p id = "metric-description"></p>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+
+    d3.csv("pub_prop_author.csv").then(function(rawData) {
+        const cleanData = rawData.map(d => {
+            return {
+                ...d,
+                umap_x: parseFloat(d.umap_x),
+                umap_y: parseFloat(d.umap_y),
+                Type: d.Type,
+                award_amount: +d.award_amount || 0
+            };
+        }).filter(d => !isNaN(d.umap_x) && !isNaN(d.umap_y));
+
+        const data = cleanData;
+
+        const width = 800;
+        const height = 650;
+
+        const marginTop = 0;
+        const marginRight = 30;
+        const marginBottom = 100;
+        const marginLeft = 40;
+
+        const x = d3.scaleLinear();
+        const y = d3.scaleLinear();
+
+        const xExtent = d3.extent(data, d => d.umap_x);
+        const yExtent = d3.extent(data, d => d.umap_y);
+
+        const yPadding = (yExtent[1] - yExtent[0]) * 0.1;
+        const xPadding = (xExtent[1] - xExtent[0]) * 0.1;
+
+        let selected_metric = d3.select("#kde-metric").property("value");
+        let showPublications = true;
+        let showProposals = true;
+        let showAuthors = true;
+
+        const bandwidths = [10, 15, 20, 25, 30, 35];
+        const thresholds = [5, 10, 15, 20, 25, 30];
+        const radius = [5, 10, 15, 20, 25, 30];
+
+        x.domain([xExtent[0] - xPadding, xExtent[1] + xPadding])
+            .nice() 
+            .range([marginLeft, width - marginRight]);
+
+        y.domain([yExtent[0] - yPadding, yExtent[1] + yPadding])
+            .nice()
+            .range([height - marginBottom, marginTop]);
+
+        const sliderText = d3.select("#slider-text");
+        const metricDescription = d3.select("#metric-description");
+        const plotType = d3.select("#plot-type");
+        const tooltip = d3.select("body").append("div").attr("class", "tooltip");
+
+        function drawChart(selected_metric) {
+            if (selected_metric === "hit_rate") {
+                showPublications = false; 
+                showAuthors = false;
+
+                d3.select("label[for='publication']")
+                        .classed("disabled-text", true)
+                        .classed("inactive-text", false);
+                d3.select("label[for='authors']")
+                        .classed("disabled-text", true)
+                        .classed("inactive-text", false);
+            } else {
+                    d3.select("label[for='publication']")
+                        .classed("disabled-text", false)
+                        .classed("inactive-text", !showPublications); 
+                    d3.select("label[for='authors']")
+                        .classed("disabled-text", false)
+                        .classed("inactive-text", !showAuthors);      
+                }
+            d3.select("#chart-container").selectAll("*").remove();
+            d3.select("#slider").selectAll("*").remove();
+
+            const filteredData = data.filter( d=> {
+                if (d.Type === 'proposal' && !showProposals) return false;
+                    if (d.Type === 'publication' && !showPublications) return false;
+                    if (d.Type === 'author' && !showAuthors) return false;
+                    return true;
+            })
+
+            let svg = d3.create("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("viewBox", [0, 0, width, height])
+                .attr("style", "max-width: 100%; height: auto;");
+
+            svg.append("g")
+                .attr("transform", `translate(0,${height - marginBottom})`)
+                .call(d3.axisBottom(x)
+                    .tickSizeOuter(0)
+                    .tickFormat(""))
+                .call(g => g.select(".tick:last-of-type text").clone()
+                    .attr("y", -3)
+                    .attr("dy", 1)
+                    .attr("font-weight", "bold"))
+                .call(g => g.selectAll(".domain, .tick line")
+                    .attr("stroke", "#808080") 
+                );
+            
+            svg.append("g")
+                .attr("transform", `translate(${marginLeft},0)`)
+                .call(d3.axisLeft(y)
+                    .tickSizeOuter(0)
+                    .tickFormat(""))
+                //.call(g => g.select(".domain").remove())
+                .call(g => g.select(".tick:last-of-type text").clone()
+                    .attr("x", 3))
+                .call(g => g.selectAll(".domain, .tick line")
+                    .attr("stroke", "#808080") 
+                );
+
+            let slider_svg = d3.select('#slider')
+                    .append('svg')
+                    .attr('width', 400)
+                    .attr('height', 100)
+                    .append('g')
+                    .attr('transform', 'translate(30,30)');
+
+
+            if(selected_metric == "density") {
+                sliderText.text("density bandwidth:");
+                metricDescription.text("the kde (kernel density) plot visualizes the density of data points in the space. the darker areas indicate a higher concentration of points, while lighter areas indicate a lower concentration. adjusting the bandwidth will change the smoothness of the density estimation.");
+                plotType.text("density plot");
+
+                let contours = d3.contourDensity()
+                    .x(d => x(d.umap_x))
+                    .y(d => y(d.umap_y))
+                    .size([width, height])
+                    .bandwidth(20)
+                    .thresholds(15)
+                    (filteredData);
+            
+                const color = d3.scaleSequential()
+                    .domain([0, d3.max(contours, d => d.value)])
+                    .interpolator(t => d3.interpolateBlues(0.1 + (0.90 * t))); 
+                
+                const kdeGroup = svg.append("g")
+                    .attr("class", "kde-layer") 
+                    .attr("stroke", "#f9f9f9")     
+                    .attr("stroke-width", 0.5)  
+                    .attr("stroke-linejoin", "round");
+                kdeGroup.selectAll("path")
+                    .data(contours)
+                    .join("path")
+                    .attr("fill", d => color(d.value)) 
+                    .attr("d", d3.geoPath());
+                
+                const update_bandwidth = (bandwidth) => {
+                    const new_contours = d3.contourDensity()
+                        .x(d => x(d.umap_x))
+                        .y(d => y(d.umap_y))
+                        .size([width, height])
+                        .bandwidth(bandwidth)
+                        .thresholds(15)
+                        (filteredData);
+
+                    color.domain([0, d3.max(new_contours, d => d.value)]);
+
+                    kdeGroup.selectAll("path")
+                        .data(new_contours)
+                        .join("path")
+                        .attr("fill", d => color(d.value)) 
+                        .attr("d", d3.geoPath());
+                    
+                };
+                const slider = d3.sliderHorizontal()
+                    .min(10)
+                    .max(35)
+                    .step(1)
+                    .tickValues(bandwidths)
+                    .width(300)
+                    .value(20)
+                    .on('onchange', val => update_bandwidth(val));
+
+                slider_svg.call(slider);
+            }
+            else if (selected_metric == "hit_rate") {
+                sliderText.text("hexbin radius:");
+                metricDescription.text("the hexbin plot visualizes the hit rate, or percent of proposals awarded in each hexagon space. each hexagon's color intensity represents the hit rate, with darker colors indicating a higher hit rate (more awarded proposals). adjusting the radius will change the size of the hexagons, affecting how many proposals are aggregated into each hexagon.");
+                plotType.text("hexbin plot");
+
+                let hexbin = d3.hexbin()
+                    .x(d => x(d.umap_x))
+                    .y(d => y(d.umap_y))
+                    .radius(15)
+                    .extent([[marginLeft, marginTop], [width - marginRight, height - marginBottom]]);
+
+                let bins = hexbin(filteredData);
+
+                function compute_hit_rate(bin) {
+                    const total = bin.length;
+                    const awarded = bin.filter(d => d['award_amount'] > 0).length;
+                    return (total === 0) ? 0 : awarded / total;
+                }
+                for (const bin of bins) {
+                    bin.hit_rate = compute_hit_rate(bin);
+                }
+                const hitRateColor = d3.scaleSequential()
+                    .domain([0, 1])
+                    .interpolator(t => d3.interpolateBlues(0.15 + (0.85 * t)));
+
+                const hexGroup = svg.append("g")
+                    .attr("class", "hexagon-group") 
+                    .attr("stroke", "#f9f9f9")
+                    .attr("stroke-width", 0.5);
+                
+                function renderHexagons(currentBins) {
+                    hexGroup.selectAll("path")
+                        .data(currentBins)
+                        .join("path")
+                            .attr("d", hexbin.hexagon())
+                            .attr("transform", d => `translate(${d.x},${d.y})`)
+                            .attr("fill", d => hitRateColor(d.hit_rate))
+                            .on("mouseover", (event, d) => {
+                                tooltip.transition()
+                                    .duration(100)
+                                    .style("opacity", 0.9);
+                                tooltip.html(`Hit Rate: ${(d.hit_rate * 100).toFixed(2)}%<br>Total Proposals: ${d.length}<br>Awarded Proposals: ${d.filter(p => p['award_amount'] > 0).length}`)
+                                    .style("left", (event.pageX + 10) + "px")
+                                    .style("top", (event.pageY - 20) + "px");
+                                hexGroup.selectAll("path")
+                                    .attr("stroke", d2 => (d2 === d) ? "#000" : "#fff")
+                                    .style("cursor", d2 => (d2 === d) ? "pointer" : "default")
+                                    .attr("stroke-width", d2 => (d2 === d) ? 1 : 0.5);
+                            })
+                            .on("mouseout", () => {
+                                tooltip.transition()
+                                    .duration(300)
+                                    .style("opacity", 0);
+                            });
+                    }
+
+                renderHexagons(bins);
+
+                const update_radius = (radius) => {
+                    hexbin.radius(radius);
+                    
+                    const new_bins = hexbin(filteredData);
+
+                    for (const bin of new_bins) {
+                        bin.hit_rate = compute_hit_rate(bin);
+                    }   
+
+                    renderHexagons(new_bins);
+                }
+                    
+                const slider_hex = d3.sliderHorizontal()
+                    .min(5)
+                    .max(30)
+                    .step(1)
+                    .tickValues(radius)
+                    .width(300)
+                    .value(15)
+                    .on('onchange', val => update_radius(val));
+
+                slider_svg.call(slider_hex);
+            }
+            d3.select("#chart-container").append(() => svg.node());
+        }
+
+        
+        d3.select("#kde-metric").on("change", function() {
+            selected_metric = this.value;
+            drawChart(this.value);
+        })
+
+        const handleCheckboxChange = (type) => {
+                const currentActive = [];
+                if (showPublications) currentActive.push('publication');
+                if (showProposals) currentActive.push('proposals');
+                if (showAuthors) currentActive.push('authors');
+
+                const isClickedActive = currentActive.includes(type);
+                
+                if(selected_metric === 'density') {
+                    if (isClickedActive) {
+                        //if only one active and clicked again, reset all to show
+                        if (currentActive.length === 1 && currentActive[0] === type) {
+                            showPublications = true;
+                            showProposals = true;
+                            showAuthors = true;
+                            console.log("reset all to show");
+                        } else if (currentActive.length === 2 && currentActive.includes(type)) {
+                            //if two active and clicked one, turn off the clicked one, leave the other
+                            if (type === 'publication') {
+                                showPublications = false;
+                            } else if (type === 'proposals') {
+                                showProposals = false;
+                            } else if (type === 'authors') {
+                                showAuthors = false;
+                            }
+                            console.log("turn off clicked");
+                        } else {
+                            //if there are other active, clicking one displays it
+                            showPublications = (type === 'publication');
+                            showProposals = (type === 'proposals');
+                            showAuthors = (type === 'authors');
+                            console.log("show only clicked");
+                        }
+                    }
+                    else {
+                        //if clicked is not active yet, just activate it
+                        //if its the last one, activate all
+                        if (type === 'publication') {
+                            showPublications = true;
+                        } else if (type === 'proposals') {
+                            showProposals = true;
+                        } else if (type === 'authors') {
+                            showAuthors = true;
+                        }
+                        console.log("activate clicked");
+                    }
+                } else if(selected_metric === 'hit_rate') {
+                    if (type === 'publication' || type === 'authors') {
+                        return;
+                    }
+                    if (isClickedActive) {
+                        //if clicked is active, turn it off
+                        showProposals = false;
+                    } else {
+                        //if clicked is not active, turn it on
+                        showProposals = true;
+                    }
+                } else {
+                        //if clicked is not active yet, just activate it
+                        //if its the last one, activate all
+                        if (type === 'publication') {
+                            showPublications = true;
+                        } else if (type === 'proposals') {
+                            showProposals = true;
+                        } else if (type === 'authors') {
+                            showAuthors = true;
+                        }
+                        console.log("activate clicked");
+                    }
+                
+
+                d3.select("label[for='publication']").classed("inactive-text", !showPublications);
+                d3.select("#publication").property("checked", showPublications);
+                d3.select("label[for='proposals']").classed("inactive-text", !showProposals);
+                d3.select("#proposals").property("checked", showProposals);
+                d3.select("label[for='authors']").classed("inactive-text", !showAuthors);
+                d3.select("#authors").property("checked", showAuthors);
+
+                console.log(`showPublications: ${showPublications}, showProposals: ${showProposals}, showAuthors: ${showAuthors}`);
+                drawChart(selected_metric);
+            }
+
+        d3.select("label[for='publication']").on("click", function(event) {
+            event.preventDefault(); // Stop browser from toggling automatically
+            if (selected_metric !== 'density') return; 
+            handleCheckboxChange('publication');
+        });
+
+        d3.select("label[for='proposals']").on("click", function(event) {
+            event.preventDefault();
+            handleCheckboxChange('proposals');
+        });
+
+        d3.select("label[for='authors']").on("click", function(event) {
+            event.preventDefault();
+            if (selected_metric !== 'density') return;
+            handleCheckboxChange('authors');
+        });
+
+        const initial_metric = d3.select("#kde-metric").property("value");
+        drawChart(initial_metric);
+    });
+
+
+</script>
+</html>
