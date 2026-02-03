@@ -8,7 +8,7 @@ env:
   REGISTRY: ghcr.io
   # Best practice to hard-code your GitHub username below in LOWERCASE.
   # Update to your own GitHub username.
-  IMAGE_NAME: nmagee/embeddings-data
+  IMAGE_NAME: uvads/embeddings-data
   IMAGE_TAG: 1.${{ github.run_number }} # GITHUB_RUN_NUMBER
   DOCKER_BUILDKIT: 1
 
