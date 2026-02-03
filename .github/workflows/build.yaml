@@ -11,6 +11,7 @@ env:
   IMAGE_NAME: uvads/embeddings-data
   IMAGE_TAG: 1.${{ github.run_number }} # GITHUB_RUN_NUMBER
   DOCKER_BUILDKIT: 1
+  SVC_NAME: embeddingsData
 
 jobs:
   build:
@@ -46,3 +47,11 @@ jobs:
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
+
+      # Now update another repo so that ArgoCD can deploy the new version.
+      - name: Remote Dispatch
+        run: |
+          curl -X POST https://api.github.com/repos/uvarc/uvarc-services/dispatches \
+            -H 'Accept: application/vnd.github.everest-preview+json' \
+            -H "Authorization: token ${{ secrets.GHCR_PAT }}" \
+            --data '{"event_type": "${{ env.IMAGE_NAME }} update to ${{ env.IMAGE_TAG }}", "client_payload": { "service": "${{ env.SVC_NAME }}", "version": "${{ env.IMAGE_TAG }}" }}'
