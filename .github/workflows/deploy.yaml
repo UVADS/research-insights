@@ -6,8 +6,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # Best practice to hard-code your GitHub username below in LOWERCASE.
-  # Update to your own GitHub username.
   IMAGE_NAME: uvads/embeddings-data
   IMAGE_TAG: 1.${{ github.run_number }} # GITHUB_RUN_NUMBER
   DOCKER_BUILDKIT: 1
@@ -19,6 +17,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Pull data from S3
+        uses: prewk/s3-cp-action@v2
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          source: 's3://uvasds-data/embeddings/pub_prop_author.csv'
+          dest: './pub_prop_author.csv'
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
