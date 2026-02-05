@@ -321,7 +321,9 @@
                     d3.select("label[for='authors']")
                         .classed("disabled-text", false)
                         .classed("inactive-text", !showAuthors);      
-                }
+            }
+
+
             d3.select("#chart-container").selectAll("*").remove();
             d3.select("#slider").selectAll("*").remove();
 
@@ -370,6 +372,70 @@
                     .append('g')
                     .attr('transform', 'translate(30,30)');
 
+            // --- NEW: Legend Helper Function ---
+            function addLegend(domain, interpolator, title, format, tickValues = null) {
+                const legendWidth = 200;
+                const legendHeight = 12;
+                // Position in upper left
+                const legendX = marginLeft + 20; 
+                const legendY = marginTop + 20;
+
+                const legendGroup = svg.append("g")
+                    .attr("transform", `translate(${legendX}, ${legendY})`);
+
+                // 1. Create Gradient ID
+                const defs = svg.append("defs");
+                const gradientId = "legend-gradient";
+                // Remove any existing gradient with this ID to avoid conflicts
+                svg.selectAll(`#${gradientId}`).remove();
+                
+                const linearGradient = defs.append("linearGradient")
+                    .attr("id", gradientId);
+
+                linearGradient.selectAll("stop")
+                    .data(d3.ticks(0, 1, 10))
+                    .join("stop")
+                    .attr("offset", d => `${d * 100}%`)
+                    .attr("stop-color", d => interpolator(d));
+
+                legendGroup.append("text")
+                    .attr("x", 0)
+                    .attr("y", -6)
+                    .style("font-family", "Inria Serif")
+                    .style("font-size", "0.85rem")
+                    .style("fill", "#002E63")
+                    .style("font-weight", "bold")
+                    .text(title);
+
+                legendGroup.append("rect")
+                    .attr("width", legendWidth)
+                    .attr("height", legendHeight)
+                    .style("fill", `url(#${gradientId})`);
+
+                const legendScale = d3.scaleLinear()
+                    .domain(domain)
+                    .range([0, legendWidth]);
+
+                const legendAxis = d3.axisBottom(legendScale)
+                    .tickSize(3)
+                    .tickFormat(format);
+                
+                if (tickValues) {
+                    legendAxis.tickValues(tickValues);
+                } else {
+                    legendAxis.ticks(5);
+                }
+
+                const axisGroup = legendGroup.append("g")
+                    .attr("class", "legend-axis")
+                    .attr("transform", `translate(0, ${legendHeight})`)
+                    .call(legendAxis);
+
+                axisGroup.select(".domain").remove();
+                axisGroup.selectAll("text").style("font-family", "Inria Serif").style("fill", "#002E63");
+                axisGroup.selectAll("line").attr("stroke", "#002E63");
+            }
+
 
             if(selected_metric == "density") {
                 sliderText.text("density bandwidth:");
@@ -383,10 +449,24 @@
                     .bandwidth(20)
                     .thresholds(15)
                     (filteredData);
+
+                const densityInterpolator = t => d3.interpolateBlues(0.1 + (0.90 * t));
             
+                const maxVal = d3.max(contours, d => d.value) || 0;
+
                 const color = d3.scaleSequential()
-                    .domain([0, d3.max(contours, d => d.value)])
-                    .interpolator(t => d3.interpolateBlues(0.1 + (0.90 * t))); 
+                    .domain([0, maxVal])
+                    .interpolator(densityInterpolator); 
+                
+                const specificTicks = [0, 0.25, 0.5, 0.75, 1].map(t => t * maxVal);
+
+                addLegend(
+                    color.domain(), 
+                    densityInterpolator, 
+                    "Density", 
+                    d => d3.format(".2f")(d), 
+                    specificTicks
+                );
                 
                 const kdeGroup = svg.append("g")
                     .attr("class", "kde-layer") 
@@ -449,10 +529,19 @@
                 for (const bin of bins) {
                     bin.hit_rate = compute_hit_rate(bin);
                 }
+                const hitRateInterpolator = t => d3.interpolateBlues(0.15 + (0.85 * t));
+
                 const hitRateColor = d3.scaleSequential()
                     .domain([0, 1])
-                    .interpolator(t => d3.interpolateBlues(0.15 + (0.85 * t)));
-
+                    .interpolator(hitRateInterpolator);
+                
+                addLegend(
+                    [0, 1], 
+                    hitRateInterpolator, 
+                    "Award Hit Rate", 
+                    d3.format(".0"), 
+                    null 
+                );
                 const hexGroup = svg.append("g")
                     .attr("class", "hexagon-group") 
                     .attr("stroke", "#f9f9f9")
