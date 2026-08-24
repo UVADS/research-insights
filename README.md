@@ -8,6 +8,6 @@ Dashboard title: Research Insights \
 Author: Anna Yao \
 Contributor(s): Neal Magee \
 Creation Date: November 20, 2025 \
-Last Modified: February 4th, 2026 \
+Last Modified: February 4th, 2026 
 
 ![1](https://github.com/user-attachments/assets/d988c688-375c-4c1c-9c27-4ca903934515)
